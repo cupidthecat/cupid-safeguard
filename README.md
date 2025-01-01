@@ -1,13 +1,16 @@
 # cupid-safeguard
 
-This project demonstrates a simple HTTPS server application written in C that:
+**Ever run into a situation where you've got important data or a code on one device, and you just can't easily get it onto another device without exposing it or jumping through complicated hoops?**  
+
+This project aims to **simplify** that scenario by giving you a small, self-contained HTTPS server. You can run `cupid-safeguard` on a trusted device in your private or home network, then securely submit and view data from other devices on the same network—**without** exposing it to the wider internet or depending on public cloud services.
+
+It demonstrates a simple server application written in C that:
 - Accepts local (private/loopback) client connections only.
 - Serves an HTML page allowing users to submit data.
 - Broadcasts new data to all connected clients in real-time via **Server-Sent Events (SSE)**.
 - Uses **OpenSSL** to enable HTTPS/TLS with a self-signed certificate.
 
 > **Note**: This is **not** a production-ready application—it's primarily for demonstration and local testing.
-
 ---
 
 ## Features
