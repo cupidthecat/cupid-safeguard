@@ -145,21 +145,33 @@ static SSL_CTX* init_openssl_ctx() {
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
 
-    // TLS_server_method() is recommended instead of deprecated SSLv23_server_method()
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-    SSL_CTX *ctx = SSL_CTX_new(SSLv23_server_method());
-#else
     const SSL_METHOD *method = TLS_server_method();
     SSL_CTX *ctx = SSL_CTX_new(method);
-#endif
-
     if (!ctx) {
         ERR_print_errors_fp(stderr);
         fprintf(stderr, "[ERROR] Unable to create SSL context.\n");
         exit(EXIT_FAILURE);
     }
 
-    // Configure context to use our cert and key
+    // 1. Restrict protocol versions (TLS 1.2+):
+    SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
+    SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION); 
+
+    // 2. Restrict ciphers to modern, strong ciphers only:
+    if (SSL_CTX_set_cipher_list(ctx, "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:TLS_AES_128_GCM_SHA256") != 1) {
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
+
+    // 3. Restrict TLS 1.3 ciphers (if desired/needed):
+    SSL_CTX_set_ciphersuites(ctx, "TLS_AES_256_GCM_SHA384:TLS_AES_128_GCM_SHA256");
+
+    // 4. Enable ECDH support if needed (for older OpenSSL):
+    #if OPENSSL_VERSION_NUMBER < 0x10100000L
+    SSL_CTX_set_ecdh_auto(ctx, 1);
+    #endif
+
+    // Load your self-signed cert and key
     if (SSL_CTX_use_certificate_file(ctx, CERT_FILE, SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
@@ -168,9 +180,6 @@ static SSL_CTX* init_openssl_ctx() {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
     }
-
-    // Optionally set more secure SSL/TLS options here, e.g.:
-    // SSL_CTX_set_options(ctx, SSL_OP_SINGLE_DH_USE);
 
     return ctx;
 }
